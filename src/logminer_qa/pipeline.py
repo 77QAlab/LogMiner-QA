@@ -18,6 +18,7 @@ from .parsing import LogParser
 from .privacy import DifferentialPrivacyAggregator
 from .sanitizer import SanitizationLayer
 from .compliance import BankingComplianceEngine, FraudDetectionEngine, ComplianceFinding, FraudFinding
+from .flaky_test_analyzer import FlakyTestAnalyzer, FlakyTestSummary, TestExecution
 from .validation import validate_record, validate_batch
 
 LOGGER = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ class AnalysisArtifact:
     journey_insights: Dict[str, Any]
     compliance_findings: List[Dict[str, Any]]
     fraud_findings: List[Dict[str, Any]]
+    flaky_test_summary: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -48,11 +50,18 @@ class LogMinerPipeline:
     journeys: JourneyAnalyzer = field(default_factory=JourneyAnalyzer)
     compliance: BankingComplianceEngine = field(default_factory=BankingComplianceEngine)
     fraud: FraudDetectionEngine = field(default_factory=FraudDetectionEngine)
+    flaky_analyzer: FlakyTestAnalyzer = field(default_factory=FlakyTestAnalyzer)
 
     def __post_init__(self) -> None:
         self.sanitizer.config = self.settings.sanitizer
         self.privacy.config = self.settings.privacy
         self.parser = LogParser(enable_nlp=self.settings.sanitizer.enable_ner)
+        from .flaky_test_analyzer import FlakyTestConfig as _FTC
+        self.flaky_analyzer = FlakyTestAnalyzer(config=_FTC(
+            flakiness_threshold=self.settings.flaky_tests.flakiness_threshold,
+            min_runs_required=self.settings.flaky_tests.min_runs_required,
+            true_failure_threshold=self.settings.flaky_tests.true_failure_threshold,
+        ))
 
     @staticmethod
     def _chunk_iterable(iterable: Iterable[Any], chunk_size: int) -> Iterable[List[Any]]:
@@ -277,6 +286,32 @@ class LogMinerPipeline:
             if event != deduplicated[-1]:
                 deduplicated.append(event)
         return deduplicated
+
+    def analyze_test_results(
+        self,
+        test_results_dir: Any = None,
+        executions: Sequence[TestExecution] | None = None,
+    ) -> FlakyTestSummary:
+        """
+        Run flaky test analysis on test result files or pre-parsed executions.
+
+        Args:
+            test_results_dir: Path to a directory containing test result files
+                              (JUnit XML, JSON, or plain-text logs).
+            executions: Pre-parsed list of TestExecution objects.
+
+        Returns:
+            FlakyTestSummary with classified tests.
+        """
+        from pathlib import Path
+        all_executions: List[TestExecution] = []
+        if test_results_dir is not None:
+            all_executions.extend(
+                self.flaky_analyzer.load_results_from_directory(Path(test_results_dir))
+            )
+        if executions:
+            all_executions.extend(executions)
+        return self.flaky_analyzer.analyze(all_executions)
 
     def _render_gherkin(self, journey_id: str, events: Sequence[str]) -> str:
         # Events are already deduplicated, just render them

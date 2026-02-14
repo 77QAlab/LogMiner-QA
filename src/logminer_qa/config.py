@@ -50,11 +50,21 @@ class PrivacyConfig:
 
 
 @dataclass(slots=True)
+class FlakyTestConfig:
+    """Configuration for flaky test analysis."""
+
+    flakiness_threshold: float = 0.0
+    min_runs_required: int = 2
+    true_failure_threshold: float = 1.0
+
+
+@dataclass(slots=True)
 class Settings:
     """Application-wide configuration."""
 
     sanitizer: SanitizerConfig = field(default_factory=SanitizerConfig)
     privacy: PrivacyConfig = field(default_factory=PrivacyConfig)
+    flaky_tests: FlakyTestConfig = field(default_factory=FlakyTestConfig)
     cache_dir: Path = Path("./.cache")
     model_registry_dir: Path = Path("./models")
     enable_async_processing: bool = True

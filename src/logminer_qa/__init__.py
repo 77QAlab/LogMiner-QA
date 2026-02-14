@@ -5,6 +5,7 @@ workloads.
 """
 
 from .config import Settings
+from .flaky_test_analyzer import FlakyTestAnalyzer, FlakyTestSummary
 from .pipeline import LogMinerPipeline
 from .sanitizer import SanitizationLayer
 from .privacy import DifferentialPrivacyAggregator
@@ -14,4 +15,6 @@ __all__ = [
     "LogMinerPipeline",
     "SanitizationLayer",
     "DifferentialPrivacyAggregator",
+    "FlakyTestAnalyzer",
+    "FlakyTestSummary",
 ]

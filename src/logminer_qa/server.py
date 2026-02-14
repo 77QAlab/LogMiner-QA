@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from .ci import generate_summary
 from .config import Settings
+from .flaky_test_analyzer import TestExecution
 from .ingestion import load_connectors
 from .pipeline import LogMinerPipeline
 
@@ -22,6 +23,21 @@ class AnalyzeRequest(BaseModel):
         default=None, description="Connector configuration (same schema as CLI JSON)."
     )
     log_level: Optional[str] = Field(default="INFO")
+
+
+class TestExecutionRecord(BaseModel):
+    test_name: str
+    status: str
+    run_id: str = ""
+    duration_seconds: float = 0.0
+    error_message: str = ""
+    timestamp: str = ""
+
+
+class AnalyzeTestsRequest(BaseModel):
+    test_results: List[TestExecutionRecord] = Field(
+        description="List of test execution records across multiple runs."
+    )
 
 
 def create_app() -> FastAPI:
@@ -65,6 +81,31 @@ def create_app() -> FastAPI:
             "report": report,
             "tests": artifact.test_cases,
             "sanitized_preview": sanitized_preview,
+        }
+
+    @app.post("/analyze-tests")
+    async def analyze_tests(request: AnalyzeTestsRequest) -> Dict[str, Any]:
+        if not request.test_results:
+            raise HTTPException(status_code=400, detail="Provide at least one test result.")
+
+        executions = [
+            TestExecution(
+                test_name=r.test_name,
+                status=r.status,
+                run_id=r.run_id,
+                duration_seconds=r.duration_seconds,
+                error_message=r.error_message,
+                timestamp=r.timestamp,
+            )
+            for r in request.test_results
+        ]
+
+        settings = Settings()
+        pipeline = LogMinerPipeline(settings=settings)
+        summary = pipeline.analyze_test_results(executions=executions)
+        return {
+            "flaky_test_summary": summary.as_dict(),
+            "test_scenarios": pipeline.flaky_analyzer.generate_tests(summary),
         }
 
     return app
