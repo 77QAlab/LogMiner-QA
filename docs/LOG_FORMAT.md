@@ -105,3 +105,17 @@ Then a record like `{"event_time": "2025-10-08T10:00:00Z", "log_line": "Somethin
 ```
 
 This is valid and is normalized to scalar values before processing.
+
+**Test run stack traces:** Records that look like test failures (e.g. `error_message`, `browser`, `selector`) are automatically normalized to have `message` and `timestamp` before validation. See [Test failure ingestion](TEST_FAILURE_INGESTION.md).
+
+## Data cleaning expectations
+
+What the tool **assumes** and **enforces** so logs are processable:
+
+- **Required fields:** Each record must have at least one non-empty timestamp-like field and one non-empty message-like field (see [Required fields](#required-fields) and [Built-in aliases](#built-in-aliases)). Records missing either are skipped and counted.
+- **Encoding:** Input files are read as **UTF-8**. Non-UTF-8 content may cause decode errors; the tool does not transcode.
+- **Size limits (validation):**
+  - String records: max **1 MB** per record.
+  - Dict records: max **10,000 keys** and max **20 levels** of nesting. Larger or deeper records are rejected to reduce DoS risk.
+- **Normalization:** Single-element array values (e.g. `["value"]`) are **unwrapped** to scalars before PII detection and hashing, so the sanitizer and parser always see scalar values.
+- **PII handling:** The sanitizer scans **string** fields for patterns (emails, account-like numbers, phones, IBANs, etc.), redacts matches with stable tokens, and stores hashes for referential integrity. Non-string fields are left as-is. See `src/logminer_qa/sanitizer.py` and `SanitizerConfig` in `config.py`.

@@ -19,6 +19,7 @@ from .privacy import DifferentialPrivacyAggregator
 from .sanitizer import SanitizationLayer
 from .compliance import BankingComplianceEngine, FraudDetectionEngine, ComplianceFinding, FraudFinding
 from .log_format import normalize_record
+from .test_failure import is_test_failure_record, test_failure_to_canonical
 from .validation import validate_record, validate_batch
 
 LOGGER = logging.getLogger(__name__)
@@ -83,6 +84,9 @@ class LogMinerPipeline:
             if self.settings.validate_inputs:
                 valid_chunk = []
                 for record in chunk:
+                    # Normalize test-failure/stack-trace entries to canonical (message + timestamp)
+                    if isinstance(record, dict) and is_test_failure_record(record):
+                        record = test_failure_to_canonical(record)
                     is_valid, error = validate_record(
                         record, log_format_config=getattr(self.settings, "log_format", None)
                     )
