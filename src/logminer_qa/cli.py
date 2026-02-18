@@ -14,6 +14,7 @@ from typing import Iterable, List, Any
 from .config import Settings
 from .ci import generate_summary, write_summary
 from .ingestion import load_connectors_from_path
+from .log_format import LogFormatConfig
 from .pipeline import LogMinerPipeline
 
 LOGGER = logging.getLogger("logminer_qa.cli")
@@ -89,6 +90,21 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
         default="INFO",
         help="Python logging level (DEBUG, INFO, WARNING, ERROR).",
     )
+    parser.add_argument(
+        "--timestamp-field",
+        metavar="KEY",
+        help="Custom JSON key for timestamp (e.g. event_time). See docs/LOG_FORMAT.md.",
+    )
+    parser.add_argument(
+        "--message-field",
+        metavar="KEY",
+        help="Custom JSON key for message (e.g. log_line). See docs/LOG_FORMAT.md.",
+    )
+    parser.add_argument(
+        "--severity-field",
+        metavar="KEY",
+        help="Custom JSON key for severity/level. See docs/LOG_FORMAT.md.",
+    )
     return parser.parse_args(argv)
 
 
@@ -159,6 +175,12 @@ def main(argv: Iterable[str] | None = None) -> int:
         sources.append(load_records(args.input))
 
     settings = Settings()
+    if args.timestamp_field or args.message_field or args.severity_field:
+        settings.log_format = LogFormatConfig(
+            timestamp_field=args.timestamp_field,
+            message_field=args.message_field,
+            severity_field=args.severity_field,
+        )
     connectors = []
     if args.connectors_config:
         LOGGER.info("Loading connectors from %s", args.connectors_config)

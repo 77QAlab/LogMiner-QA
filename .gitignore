@@ -80,6 +80,7 @@ htmlcov/
 # Logs
 *.log
 logs/
+pip_install_log.txt
 
 # Temporary files
 *.tmp

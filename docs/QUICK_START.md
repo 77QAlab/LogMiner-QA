@@ -9,15 +9,20 @@ Get LogMiner-QA running in 5 minutes!
 - 2GB+ free disk space (for models and dependencies)
 - Optional: spaCy for enhanced PII detection
 
+**Windows:** If `python` is not in your PATH, use the Python launcher instead: `py -m venv .venv` and `py` for running Python. Activate with `.venv\Scripts\Activate.ps1` (PowerShell) or `.venv\Scripts\activate.bat` (CMD).
+
 ## Step 1: Install Dependencies
 
 ```bash
 # Create and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+python -m venv .venv   # On Windows if python not in PATH: py -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\Activate.ps1
 
-# Install core dependencies
+# Install core dependencies (can take 10+ minutes; TensorFlow is ~330 MB)
 pip install -r requirements.txt
+
+# Install package in editable mode (required for CLI to work)
+pip install -e .
 
 # Optional: Enhanced PII detection
 pip install spacy
@@ -51,9 +56,26 @@ python -c "import secrets; print(secrets.token_hex(32))"
 # Then set: set LOGMINER_HASH_SECRET=<generated_value>
 ```
 
+## Optional improvements (non-blocking)
+
+- **LOGMINER_HASH_SECRET:** The test may report it's not set and a default is used. For real use (production or real data), set it as in Step 2 above. See also Troubleshooting below.
+- **spaCy (NER-based PII detection):** Optional. The test still passes without it. To enable enhanced PII detection, run: `pip install spacy` then `python -m spacy download en_core_web_sm`.
+- **TensorFlow oneDNN message:** If you see a oneDNN/custom operations message when running, it is informational only; no action needed.
+
 ## Step 3: Run Your First Analysis
 
 ### Option A: Use Sample Data
+
+**Windows (PowerShell)** — from project root, run these two commands (one per line):
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+.\.venv\Scripts\python.exe -m logminer_qa.cli --input data/sample_logs.jsonl --output sanitized.jsonl --report report.json --tests generated_tests.feature
+```
+
+Or use `py` if it's on your PATH: `py -m logminer_qa.cli ...`
+
+**Linux/macOS or generic:**
 
 ```bash
 python -m logminer_qa.cli \

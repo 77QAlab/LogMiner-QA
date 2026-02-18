@@ -18,6 +18,8 @@ from .parsing import LogParser
 from .privacy import DifferentialPrivacyAggregator
 from .sanitizer import SanitizationLayer
 from .compliance import BankingComplianceEngine, FraudDetectionEngine, ComplianceFinding, FraudFinding
+from .log_format import normalize_record
+from .test_failure import is_test_failure_record, test_failure_to_canonical
 from .validation import validate_record, validate_batch
 
 LOGGER = logging.getLogger(__name__)
@@ -82,7 +84,12 @@ class LogMinerPipeline:
             if self.settings.validate_inputs:
                 valid_chunk = []
                 for record in chunk:
-                    is_valid, error = validate_record(record)
+                    # Normalize test-failure/stack-trace entries to canonical (message + timestamp)
+                    if isinstance(record, dict) and is_test_failure_record(record):
+                        record = test_failure_to_canonical(record)
+                    is_valid, error = validate_record(
+                        record, log_format_config=getattr(self.settings, "log_format", None)
+                    )
                     if is_valid:
                         valid_chunk.append(record)
                     else:
@@ -90,9 +97,10 @@ class LogMinerPipeline:
                         if error:
                             LOGGER.debug("Skipping invalid record: %s", error)
                 chunk = valid_chunk
-            
-            # Process chunk
+
+            # Normalize records (unwrap single-element arrays) so downstream sees scalar values
             for record in chunk:
+                record = normalize_record(record)
                 result = self.sanitizer.sanitize_record(record)
                 sanitized = result.sanitized
                 sanitized_records.append(sanitized)

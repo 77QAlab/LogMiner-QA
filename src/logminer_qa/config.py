@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from .log_format import LogFormatConfig
+
 
 @dataclass(slots=True)
 class SanitizerConfig:
@@ -66,6 +68,8 @@ class Settings:
     chunk_size: int = 1000  # Process records in chunks for memory efficiency
     enable_streaming: bool = True  # Use streaming for large datasets
     validate_inputs: bool = True  # Validate input data before processing
+    # Log format: optional custom field names for timestamp / message / severity
+    log_format: LogFormatConfig = field(default_factory=LogFormatConfig)
 
 
 DEFAULT_SETTINGS = Settings()

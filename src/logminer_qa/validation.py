@@ -4,12 +4,18 @@ Input validation utilities for log records.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+
+from .log_format import LogFormatConfig, has_required_log_fields
 
 LOGGER = logging.getLogger(__name__)
 
 
-def validate_record(record: Any, strict: bool = False) -> tuple[bool, str | None]:
+def validate_record(
+    record: Any,
+    strict: bool = False,
+    log_format_config: Optional[LogFormatConfig] = None,
+) -> tuple[bool, str | None]:
     """
     Validate a log record structure.
     
@@ -37,6 +43,11 @@ def validate_record(record: Any, strict: bool = False) -> tuple[bool, str | None
         # Check for suspiciously large dicts
         if len(record) > 10_000:
             return False, f"Record has too many keys: {len(record)} (max 10,000)"
+        
+        # Require at least timestamp-like and message-like fields (via aliases/mapping)
+        ok, err = has_required_log_fields(record, log_format_config)
+        if not ok and err:
+            return False, err
     
     return True, None
 

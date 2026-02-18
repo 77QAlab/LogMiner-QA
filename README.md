@@ -37,17 +37,22 @@ python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-# 2. Set security secret (optional but recommended)
+# 2. Install package in editable mode (required for CLI)
+pip install -e .
+
+# 3. Set security secret (optional but recommended)
 export LOGMINER_HASH_SECRET=$(openssl rand -hex 32)  # Linux/Mac
 # Windows PowerShell: See docs/QUICK_START.md
 
-# 3. Run analysis
+# 4. Run analysis
 python -m logminer_qa.cli \
   --input data/sample_logs.jsonl \
   --output sanitized.jsonl \
   --report report.json \
   --tests tests.feature
 ```
+
+**Windows (PowerShell):** After activating the venv (`.\.venv\Scripts\Activate.ps1`), ensure you've run `pip install -e .` first. Then you can use `.\.venv\Scripts\python.exe -m logminer_qa.cli ...` or the one-step script: `.\run_sample.ps1` (runs the installation test, ensures package is installed, then runs the sample pipeline).
 
 ### CI mode
 
@@ -83,6 +88,7 @@ Refer to src/logminer_qa/config.py for tunable parameters:
 
 - SanitizerConfig toggles NER, hashing algorithm, token store path, and entity types.
 - PrivacyConfig defines epsilon/delta budgets and toggles DP.
+- **Log format**: Records must have at least a timestamp-like and message-like field. Built-in aliases support `time`/`timestamp`, `msg`/`message`, etc.; custom mapping is available via CLI (`--timestamp-field`, `--message-field`, `--severity-field`) or `Settings.log_format`. See [Log format and field mapping](docs/LOG_FORMAT.md) (includes [data cleaning expectations](docs/LOG_FORMAT.md#data-cleaning-expectations): encoding, size limits, PII handling).
 
 Environment variables:
 
@@ -115,7 +121,13 @@ We're looking for early adopters to help shape LogMiner-QA!
 
 ## Documentation
 
+- [User guide](docs/USER_GUIDE.md) - How to run on-prem (file, Elastic/Datadog), field mapping, test failures, outputs
+- [Handoff guide](docs/HANDOFF.md) - Example run, sample outputs, and follow-up questions for early adopters
+- [Connectors](docs/CONNECTORS.md) - Elasticsearch and Datadog config, options, export JSONL alternative
+- [Environment Setup](docs/ENVIRONMENT_SETUP.md) - Step-by-step install (replicable)
 - [Quick Start Guide](docs/QUICK_START.md) - Get running in 5 minutes
+- [Log format and field mapping](docs/LOG_FORMAT.md) - Required fields, aliases, custom mapping, data cleaning expectations
+- [Test failure ingestion](docs/TEST_FAILURE_INGESTION.md) - Ingest test run stack traces (error_message, browser, os, selector) as JSONL
 - [Early Adopter Guide](docs/EARLY_ADOPTER_GUIDE.md) - For early users
 - [Workflow Diagram](docs/WORKFLOW.md) - System architecture
 - [Tech Stack](docs/TECH_STACK.md) - Complete technology reference
