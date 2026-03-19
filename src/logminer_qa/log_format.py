@@ -29,6 +29,9 @@ DEFAULT_MESSAGE_ALIASES: Tuple[str, ...] = (
     "content",
     "description",
     "summary",
+    "event",
+    "event_type",
+    "action",
 )
 DEFAULT_SEVERITY_ALIASES: Tuple[str, ...] = (
     "severity",
@@ -138,5 +141,5 @@ def has_required_log_fields(
     if ts_key is None or ts_val is None:
         return False, "Missing required field: timestamp (or time, ts, @timestamp, date, datetime)"
     if msg_key is None or msg_val is None:
-        return False, "Missing required field: message (or msg, text, log, body, content, event)"
+        return False, "Missing required field: message (or msg, text, log, body, content, event, action)"
     return True, None

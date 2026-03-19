@@ -7,7 +7,6 @@
 > **"Turn Production Wisdom into Test Coverage"** — Privacy-first log analysis and automated test generation for banking and enterprise workloads.
 
 ## Overview
-
 LogMiner-QA ingests raw banking logs, scrubs sensitive customer data, and generates actionable test cases. The tool is composed of:
 
 - **Intelligent Log Sanitizer**: Detects PII via pattern matching and optional spaCy NER, redacts sensitive data with stable tokens, and hashes identifiers for correlation without exposure.
@@ -28,7 +27,6 @@ LogMiner-QA ingests raw banking logs, scrubs sensitive customer data, and genera
 - CLI workflow to process logs into sanitized outputs, privacy-preserving reports, and templated Gherkin tests.
 
 ## Quick Start
-
 Get started in 5 minutes! See [Quick Start Guide](docs/QUICK_START.md) for detailed instructions.
 
 ```bash
@@ -65,7 +63,6 @@ python -m logminer_qa.cli --input data/sample_logs.jsonl --ci-summary build/logm
 Inspect `high_severity_findings` / `anomalies_detected` and fail the build if thresholds are exceeded.
 
 ### API Server
-
 Run the analysis service in-process:
 
 ```bash
@@ -73,6 +70,43 @@ uvicorn logminer_qa.server:create_app --factory --host 0.0.0.0 --port 8080
 ```
 
 POST `{"records": [...]}` to `/analyze` to receive sanitized previews, risk summaries, and generated tests.
+
+### Dashboard (React UI)
+
+The dashboard is a separate frontend app that talks to the API server (backend) via `/analyze`.
+
+1. Start the API backend
+
+Windows PowerShell (offline-ready):
+
+```powershell
+$env:PYTHONPATH="C:\Users\abirm\LogMiner-QA\src"
+$env:TRANSFORMERS_OFFLINE="1"
+$env:HF_HUB_OFFLINE="1"
+
+cd C:\Users\abirm\LogMiner-QA
+.\.venv\Scripts\python.exe -m uvicorn logminer_qa.server:create_app --factory --host 127.0.0.1 --port 8081
+```
+
+2. Start the dashboard frontend
+
+First time:
+```powershell
+cd C:\Users\abirm\LogMiner-QA\dashboard
+npm install
+```
+
+Run:
+```powershell
+cd C:\Users\abirm\LogMiner-QA\dashboard
+npx vite
+```
+
+Open the URL printed by Vite (for example `http://localhost:5177/`).
+
+Notes:
+- If you use `Upload File` with a CSV that has `timestamp` and `event` columns, the tool will treat `event` as the message-like field for validation/test generation.
+- If the sentence-transformers model is not available in the local cache, offline mode may skip embedding-based steps (clustering/anomaly/journey), but sanitization + compliance/fraud/test generation can still run depending on your data.
 
 ## Project Structure
 
@@ -83,7 +117,6 @@ POST `{"records": [...]}` to `/analyze` to receive sanitized previews, risk summ
 - Dockerfile / helm/ (optional) — Templates for on-prem deployment.
 
 ## Configuration
-
 Refer to src/logminer_qa/config.py for tunable parameters:
 
 - SanitizerConfig toggles NER, hashing algorithm, token store path, and entity types.
@@ -95,24 +128,20 @@ Environment variables:
 - LOGMINER_HASH_SECRET — Secret key for deterministic hashing (default fallback provided with warning).
 
 ## Differential Privacy Guarantees
-
 The Laplace mechanism ensures ε-differential privacy for count-based metrics. Configure ε per compliance needs; smaller ε yields stronger privacy at the cost of accuracy.
 
 ## Extensibility
-
 - Plug in custom PII detection patterns or new NER models.
 - Extend LogMinerPipeline._classify_record to reflect domain-specific risk classification.
 - Replace _generate_tests with connectors to Cucumber, Pytest-BDD, or internal tooling.
 
 ## Deployment Notes
-
 - Package the tool as a container; run sanitizer and analysis components in the same secure cluster.
 - Disable outbound networking, mount model/token stores to persistent volumes, and integrate with the bank’s secrets manager.
 - Export Prometheus metrics from the pipeline while respecting privacy budgets.
 
 ## Early Adopters
-
-We're looking for early adopters to help shape LogMiner-QA! 
+We're looking for early adopters to help shape LogMiner-QA!
 
 - 📖 Read the [Early Adopter Guide](docs/EARLY_ADOPTER_GUIDE.md)
 - 🚀 Try it out with our [Quick Start](docs/QUICK_START.md)
@@ -120,7 +149,6 @@ We're looking for early adopters to help shape LogMiner-QA!
 - 🤝 Contribute following our [Contributing Guide](CONTRIBUTING.md)
 
 ## Documentation
-
 - [User guide](docs/USER_GUIDE.md) - How to run on-prem (file, Elastic/Datadog), field mapping, test failures, outputs
 - [Handoff guide](docs/HANDOFF.md) - Example run, sample outputs, and follow-up questions for early adopters
 - [Connectors](docs/CONNECTORS.md) - Elasticsearch and Datadog config, options, export JSONL alternative
@@ -134,15 +162,12 @@ We're looking for early adopters to help shape LogMiner-QA!
 - [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment
 
 ## Contributing
-
 Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
-
 This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Future Enhancements
-
 - Expand connector catalog (Splunk, CloudWatch, Datadog streaming)
 - Integrate model registry + fine-tuned fraud detection models
 - Surface dashboard visualisations (Streamlit/React) and CI/CD automation hooks
